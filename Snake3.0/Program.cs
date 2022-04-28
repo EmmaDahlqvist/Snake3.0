@@ -6,20 +6,21 @@ namespace Snake3._0
 {
     class Program
     {
-        //game
+        //spelinformation
         static int width = 35;
         static int height = 20;
+        static int points = 0;
+        static int speed = 100;
+        static List<int> highscore = new List<int>();
+        static bool superSettings; //om ormen ska ha olika färger och öka hastighet
 
         //snake information
         static int headX = 1;
         static int headY = 1;
         static List<int> tailX = new List<int>();
         static List<int> tailY = new List<int>();
-        static int moveX = 0;
-        static int moveY = 0;
-        static int points = 0;
-        static int speed = 100;
-        static List<int> highscore = new List<int>();
+        static int moveX = 0; //rörelse i x led
+        static int moveY = 0; //rörelse i y led
 
         //äpple
         static Random rnd = new Random();
@@ -30,9 +31,23 @@ namespace Snake3._0
         {
             ChangePositionColor(0, 0, ConsoleColor.Yellow);
             Console.WriteLine("Välkommen till snake! Ät äpplen för att få så högt score som möjligt");
-            Thread.Sleep(2000);
+
             do
             {
+                Console.WriteLine("Vill du spela med coola inställningar? (Ökad hastighet och färgglad orm)");
+                string superSettingsOn = Console.ReadLine();
+                if (superSettingsOn.ToLower() == "ja")
+                {
+                    superSettings = true; //extra inställningar på
+                    Console.WriteLine("Coola inställningar på!");
+                }
+                else
+                {
+                    superSettings = false; //extra inställningar av
+                    Console.WriteLine("Coola inställningar av!");
+                }
+                Thread.Sleep(1000);
+
                 PlayGame(); //starta spel
 
                 //efter död
@@ -45,11 +60,21 @@ namespace Snake3._0
                 Reset(); //resetta statistik
             } while (Console.ReadLine().ToLower() == "ja");
 
+            //spelaren vill inte köra igen -> eftertexter
             Console.Clear();
             Console.WriteLine("Bra jobbat, såhär gick dina rundor:");
-            for(int i = 0; i < highscore.Count; i++)
+            for (int i = 0; i < highscore.Count; i++)
             {
-                Console.WriteLine($"Runda {i+1}: {highscore[i]}");
+                if (highscore[i] >= 15) //mer än 15 poäng
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Runda {i + 1}: {highscore[i]}");
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Runda {i + 1}: {highscore[i]}");
+                }
             }
             Console.WriteLine("\nTryck på valfri knapp för att avsluta...");
             Console.ReadKey();
@@ -59,7 +84,7 @@ namespace Snake3._0
         {
             while (!Die())
             {
-                Console.Clear();
+                ClearConsole();
                 DrawSnake();
                 DrawMap();
                 ChangePositionColor(0, height + 1, ConsoleColor.White);
@@ -69,6 +94,7 @@ namespace Snake3._0
             }
         }
 
+        //målar upp orm och hanterar rörelsen
         static void DrawSnake()
         {
             Movement(); //hanterar moveX och moveY
@@ -79,30 +105,34 @@ namespace Snake3._0
 
             //måla upp ormen
             ChangePositionColor(headX, headY, ConsoleColor.Green);
-            Console.SetCursorPosition(headX, headY);
-            Console.Write("*");
+            Console.Write('Q');
         }
 
+
+        //svansens rörelse och uppbyggnad
         static void Tail()
         {
-
             if (Collision(appleX, appleY)) //krock med äpple
             {
                 //uppdatera koordinater (byt plats på äpple)
                 appleX = rnd.Next(1, width - 1);
                 appleY = rnd.Next(1, height - 1);
 
-                if(tailX.Count == 0 && tailY.Count == 0) //ingen svanns än -> bygg på huvudet
+                if (tailX.Count == 0 && tailY.Count == 0) //ingen svanns än -> bygg på huvudet
                 {
                     tailX.Add(headX);
                     tailY.Add(headY);
-                } else //bygg på svans
+                }
+                else //bygg på svans
                 {
-                    tailX.Add(tailX[tailX.Count-1] - moveX);
-                    tailY.Add(tailY[tailY.Count -1]- moveY);
+                    tailX.Add(tailX[tailX.Count - 1] - moveX);
+                    tailY.Add(tailY[tailY.Count - 1] - moveY);
                 }
                 points++;
-                speed --; //öka hastighet
+                if (superSettings)
+                {
+                    speed--; //öka hastighet
+                }
             }
 
             //håller gamla X och Y värden
@@ -110,7 +140,7 @@ namespace Snake3._0
             int[] oldTailY = new int[tailY.Count];
 
             //uppdatera tail koordinater 
-            for (int i = 0; i < tailX.Count; i++) 
+            for (int i = 0; i < tailX.Count; i++)
             {
                 oldTailX[i] = tailX[i];
                 oldTailY[i] = tailY[i];
@@ -128,35 +158,31 @@ namespace Snake3._0
                 }
 
                 //rita svansen
-                ChangePositionColor(tailX[i], tailY[i], ConsoleColor.Green);
+                ChangePositionColor(tailX[i], tailY[i], SnakeColor());
                 Console.Write("*");
             }
         }
 
+        //väggar
         static void DrawMap()
         {
             //bygg väggar
-            for(int i = 0; i < width; i++) //toppen
+            for (int i = 0; i < width; i++)
             {
-                ChangePositionColor(i, 0, ConsoleColor.White);
+                ChangePositionColor(i, 0, ConsoleColor.White); //toppen
+                Console.Write("-");
+
+                ChangePositionColor(i, height, ConsoleColor.White); //botten
                 Console.Write("-");
             }
 
-            for(int i = 0; i < width; i++) //botten
-            {
-                ChangePositionColor(i, height, ConsoleColor.White);
-                Console.Write("-");
-            }
 
-            for (int i = 0; i < height; i++) //vänster
+            for (int i = 0; i < height; i++)
             {
-                ChangePositionColor(0, i+1, ConsoleColor.White);
+                ChangePositionColor(0, i + 1, ConsoleColor.White); //vänster
                 Console.Write("|");
-            }
 
-            for (int i = 0; i < height; i++) //höger
-            {
-                ChangePositionColor(width, i+1, ConsoleColor.White);
+                ChangePositionColor(width, i + 1, ConsoleColor.White); //höger
                 Console.Write("|");
             }
 
@@ -165,6 +191,7 @@ namespace Snake3._0
             Console.Write("O");
         }
 
+        //rörelse
         static void Movement()
         {
             if (Console.KeyAvailable) //om knapp är nedtryckt
@@ -209,40 +236,40 @@ namespace Snake3._0
         static bool Die()
         {
             //Kollision med vägg
-            for(int i = 0; i < width; i++)
+            for (int i = 0; i < width; i++)
             {
                 //krock med topp vägg
-                if(Collision(i, 0))
+                if (Collision(i, 0))
                 {
                     return true;
                 }
-                
+
                 //krock med nedre vägg
-                if(Collision(i, height))
+                if (Collision(i, height))
                 {
                     return true;
                 }
             }
 
-            for(int i = 0; i < height; i++)
+            for (int i = 0; i < height; i++)
             {
                 //krock med höger vägg
-                if(Collision(0, i))
+                if (Collision(0, i))
                 {
                     return true;
                 }
 
                 //krock med vänster vägg
-                if(Collision(width, i))
+                if (Collision(width, i))
                 {
                     return true;
                 }
             }
 
             //krock med svans
-            for(int i = 0; i < tailX.Count; i++)
+            for (int i = 0; i < tailX.Count; i++)
             {
-                if(Collision(tailX[i], tailY[i]))
+                if (Collision(tailX[i], tailY[i]))
                 {
                     return true;
                 }
@@ -276,6 +303,35 @@ namespace Snake3._0
         {
             Console.ForegroundColor = color;
             Console.SetCursorPosition(x, y);
+        }
+
+        //orm färg
+        static ConsoleColor SnakeColor()
+        {
+            if (superSettings)
+            {
+                //lista med möjliga färger
+                List<ConsoleColor> colors = new List<ConsoleColor>() { ConsoleColor.Blue, ConsoleColor.White,
+                ConsoleColor.Red, ConsoleColor.Yellow, ConsoleColor.DarkGreen, ConsoleColor.DarkGray, ConsoleColor.DarkMagenta, ConsoleColor.Cyan};
+                Random rnd = new Random();
+                int colorIndex = rnd.Next(0, colors.Count - 1);
+                //returnera en random färg
+                return colors[colorIndex];
+            } 
+            else
+            {
+                return ConsoleColor.Green;
+            }
+        }
+
+        //rensa console med mindre delay
+        static void ClearConsole()
+        {
+            Console.SetCursorPosition(0, 0);
+            Console.CursorVisible = false;
+            for (int y = 0; y < Console.WindowHeight; y++)
+                Console.Write(new String(' ', Console.WindowWidth));
+            Console.SetCursorPosition(0, 0);
         }
     }
 }
