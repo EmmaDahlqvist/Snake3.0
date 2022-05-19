@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace Snake3._0
@@ -35,8 +36,7 @@ namespace Snake3._0
             do
             {
                 Console.WriteLine("Vill du spela med coola inställningar? (Ökad hastighet och färgglad orm)");
-                string superSettingsOn = Console.ReadLine();
-                if (superSettingsOn.ToLower() == "ja")
+                if (YesOrNo())
                 {
                     superSettings = true; //extra inställningar på
                     Console.WriteLine("Coola inställningar på!");
@@ -58,14 +58,14 @@ namespace Snake3._0
                 Console.WriteLine("Poäng: " + points);
                 Console.WriteLine("\nVill du spela igen? Skriv 'Ja' för att köra igen");
                 Reset(); //resetta statistik
-            } while (Console.ReadLine().ToLower() == "ja");
+            } while (YesOrNo());
 
             //spelaren vill inte köra igen -> eftertexter
             Console.Clear();
             Console.WriteLine("Bra jobbat, såhär gick dina rundor:");
             for (int i = 0; i < highscore.Count; i++)
             {
-                if (highscore[i] >= 15) //mer än 15 poäng
+                if (highscore[i] == highscore.Max()) //Högst poäng
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine($"Runda {i + 1}: {highscore[i]}");
@@ -76,6 +76,7 @@ namespace Snake3._0
                     Console.WriteLine($"Runda {i + 1}: {highscore[i]}");
                 }
             }
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("\nTryck på valfri knapp för att avsluta...");
             Console.ReadKey();
         }
@@ -85,21 +86,22 @@ namespace Snake3._0
             while (!Die())
             {
                 ClearConsole();
-                DrawSnake();
-                DrawMap();
+                Movement(); //hanterar moveX och moveY
+                Tail(); //svansen
+                DrawSnake(); //måla ormen
+                DrawMap(); //mapen
+
+                //statistik
                 ChangePositionColor(0, height + 1, ConsoleColor.White);
                 Console.WriteLine("Poäng: " + points);
                 Console.WriteLine("Hastighet: " + speed + " (Lägre är snabbare)");
-                Thread.Sleep(speed);
+                Thread.Sleep(speed); //delay
             }
         }
 
         //målar upp orm och hanterar rörelsen
         static void DrawSnake()
         {
-            Movement(); //hanterar moveX och moveY
-            Tail(); //svansen
-
             headX += moveX; //ändring X led
             headY += moveY; //ändring Y led
 
@@ -128,11 +130,12 @@ namespace Snake3._0
                     tailX.Add(tailX[tailX.Count - 1] - moveX);
                     tailY.Add(tailY[tailY.Count - 1] - moveY);
                 }
-                points++;
+
                 if (superSettings)
                 {
                     speed--; //öka hastighet
                 }
+                points++;
             }
 
             //håller gamla X och Y värden
@@ -150,7 +153,8 @@ namespace Snake3._0
                     //följ efter huvudet
                     tailX[i] = headX;
                     tailY[i] = headY;
-                } else
+                }
+                else
                 {
                     //gör så svansen hoppar fram ett steg
                     tailX[i] = oldTailX[i - 1];
@@ -163,7 +167,7 @@ namespace Snake3._0
             }
         }
 
-        //väggar
+        //skriv ut väggar och äpple
         static void DrawMap()
         {
             //bygg väggar
@@ -175,8 +179,6 @@ namespace Snake3._0
                 ChangePositionColor(i, height, ConsoleColor.White); //botten
                 Console.Write("-");
             }
-
-
             for (int i = 0; i < height; i++)
             {
                 ChangePositionColor(0, i + 1, ConsoleColor.White); //vänster
@@ -308,7 +310,7 @@ namespace Snake3._0
         //orm färg
         static ConsoleColor SnakeColor()
         {
-            if (superSettings)
+            if (superSettings) //om spelaren valt supersettings
             {
                 //lista med möjliga färger
                 List<ConsoleColor> colors = new List<ConsoleColor>() { ConsoleColor.Blue, ConsoleColor.White,
@@ -317,11 +319,36 @@ namespace Snake3._0
                 int colorIndex = rnd.Next(0, colors.Count - 1);
                 //returnera en random färg
                 return colors[colorIndex];
-            } 
-            else
+            }
+            else //annars grön orm
             {
                 return ConsoleColor.Green;
             }
+        }
+
+        //svara ja eller nej på fråga
+        static bool YesOrNo()
+        {
+            string answer = Console.ReadLine();
+
+            //du svarade inte "ja" eller "nej"
+            while (answer.ToLower() != "ja" && answer.ToLower() != "nej")
+            {
+                Console.WriteLine("Vänligen svara ja eller nej!");
+                answer = Console.ReadLine();
+            }
+
+            //svarat ja
+            if (answer.ToLower() == "ja")
+            {
+                return true;
+            }
+            else if (answer.ToLower() == "nej") //svarat nej
+            {
+                return false;
+            }
+
+            return false;
         }
 
         //rensa console med mindre delay
